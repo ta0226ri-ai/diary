@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>わたしの日記</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#f7b7a3">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="わたしの日記">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding-top:env(safe-area-inset-top);font-family:"Hiragino Maru Gothic ProN","Hiragino Sans","Noto Sans JP",sans-serif;background:#fff8f3;color:#4a3f3a}
+header{background:linear-gradient(135deg,#f7b7a3,#f3d1dc);color:#fff;padding:16px;text-align:center;font-size:21px;font-weight:bold;letter-spacing:.05em}
+main{max-width:760px;margin:0 auto;padding:16px}
+.card{background:#fff;border-radius:16px;padding:16px;margin-bottom:16px;box-shadow:0 2px 8px rgba(230,150,140,.15)}
+label{font-size:13px;color:#a08880;display:block;margin:10px 0 4px}
+input,textarea{width:100%;padding:10px;border:1px solid #f0dcd5;border-radius:10px;font-size:15px;font-family:inherit;background:#fffdfb}
+textarea{min-height:160px;resize:vertical}
+.moods{display:flex;flex-wrap:wrap;gap:6px}
+.moods button{font-size:24px;background:#fff4ef;border:2px solid transparent;border-radius:12px;padding:4px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center}
+.moods button small{font-size:10px;color:#a08880}
+.moods button.on{border-color:#f7a99a;background:#ffe6de}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.btn{background:#f7a99a;color:#fff;border:none;border-radius:20px;padding:10px 18px;font-size:15px;cursor:pointer;font-family:inherit}
+.btn.sub{background:#f6ece8;color:#7a645c}
+.photos{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.ph{position:relative}
+.ph img{width:90px;height:90px;object-fit:cover;border-radius:10px;display:block}
+.ph button{position:absolute;top:-6px;right:-6px;background:#fff;border:1px solid #eee;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:12px;line-height:1}
+.entry{border-top:1px dashed #f0dcd5;padding:14px 0}
+.entry:first-child{border-top:none}
+.entry h3{margin:0 0 6px;font-size:15px}
+.entry p{margin:0;white-space:pre-wrap;line-height:1.8}
+.entry .eph{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.entry .eph img{width:120px;height:120px;object-fit:cover;border-radius:10px;cursor:zoom-in}
+.entry .ops{margin-top:6px}
+.entry .ops button{background:none;border:none;color:#d08a80;cursor:pointer;font-size:13px;padding:0 10px 0 0;font-family:inherit}
+.muted{color:#b9a59e;font-size:14px}
+/* calendar */
+.calhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.calhead h2{margin:0;font-size:20px}
+.calhead button{background:#fff4ef;border:none;border-radius:50%;width:36px;height:36px;font-size:16px;cursor:pointer;color:#c77}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.dow{text-align:center;font-size:12px;color:#a08880;padding:4px 0}
+.dow:first-child{color:#e88}.dow:last-child{color:#88b}
+.day{aspect-ratio:1/1;border-radius:10px;background:#fffaf7;position:relative;cursor:pointer;overflow:hidden;border:1px solid #f6ece8}
+.day .n{position:absolute;top:3px;left:5px;font-size:12px;z-index:2;text-shadow:0 0 3px #fff}
+.day .m{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:22px;z-index:2}
+.day img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.85}
+.day.hasmood img{opacity:.3}
+.day .m svg{max-width:44px;max-height:44px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.15))}
+.day.today{border:2px solid #f7a99a}
+.day.empty{background:none;border:none;cursor:default}
+.stat{text-align:center;font-size:13px;color:#a08880;margin-top:10px}
+#view{position:fixed;inset:0;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;z-index:9}
+#view img{max-width:94vw;max-height:90vh;border-radius:8px}
+</style>
+</head>
+<body>
+<header>🐾 わたしの日記 🐾</header>
+<main>
+<div class="card">
+<div class="calhead"><button id="prev">◀</button><h2 id="month"></h2><button id="next">▶</button></div>
+<div class="grid" id="cal"></div>
+<div class="stat" id="stat"></div>
+</div>
+<div class="card" id="editor">
+<label>日付</label>
+<input type="date" id="date">
+<label>今日の気分</label>
+<div class="moods" id="moods"></div>
+<label>タイトル</label>
+<input id="title" placeholder="今日のひとこと">
+<label>本文</label>
+<textarea id="body" placeholder="今日あったこと、感じたこと…"></textarea>
+<label>写真</label>
+<div class="row" style="margin-top:0"><button class="btn sub" id="addPhoto">📷 写真を追加</button><input type="file" id="photoFile" accept="image/*" multiple style="display:none"></div>
+<div class="photos" id="photos"></div>
+<div class="row">
+<button class="btn" id="save">保存する</button>
+<button class="btn sub" id="clear">新しく書く</button>
+</div>
+</div>
+<div class="card">
+<input id="search" placeholder="🔍 日記を検索">
+<div id="list" style="margin-top:12px"></div>
+<div class="row">
+<button class="btn sub" id="export">バックアップを保存</button>
+<button class="btn sub" id="importBtn">バックアップを読み込む</button>
+<input type="file" id="importFile" accept=".json" style="display:none">
+</div>
+</div>
+</main>
+<div id="view"><img id="viewImg"></div>
+<script>
+const MOODS=[["happy","しあわせ"],["smile","にこにこ"],["calm","おだやか"],["excited","わくわく"],["cozy","ほっこり"],["sad","しょんぼり"],["cry","かなしい"],["angry","ぷんぷん"],["sleepy","ねむい"],["tired","ぐったり"]];
+const OLD={"🥰":"happy","😊":"smile","🌸":"calm","🤩":"excited","😌":"cozy","🥺":"sad","😭":"cry","😤":"angry","😪":"sleepy","🤒":"tired","😄":"happy","🙂":"smile","😐":"calm","😢":"cry","😠":"angry","😴":"sleepy"};
+function mkey(m){return OLD[m]||m}
+function beagle(k,size){k=mkey(k);const B="#d9a36e",T="#e8b986",W="#fffaf4",R="#b8433f",K="#3b2a22",P="#f59ab0";
+const closedHappy=`<path d="M34 49 Q39 43 44 49" stroke="${K}" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M56 49 Q61 43 66 49" stroke="${K}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+const closedDown=`<path d="M34 47 Q39 52 44 47" stroke="${K}" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M56 47 Q61 52 66 47" stroke="${K}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+const dots=`<ellipse cx="38" cy="48" rx="7" ry="7.6" fill="#e9a99a" opacity=".5"/><ellipse cx="62" cy="48" rx="7" ry="7.6" fill="#e9a99a" opacity=".5"/><ellipse cx="38" cy="48" rx="5.5" ry="6.2" fill="${K}"/><ellipse cx="62" cy="48" rx="5.5" ry="6.2" fill="${K}"/><circle cx="40" cy="45.5" r="2.3" fill="#fff"/><circle cx="64" cy="45.5" r="2.3" fill="#fff"/><circle cx="36.5" cy="50.5" r="1" fill="#fff"/><circle cx="60.5" cy="50.5" r="1" fill="#fff"/>`;
+const big=`<ellipse cx="38" cy="48" rx="7" ry="7.8" fill="${K}"/><ellipse cx="62" cy="48" rx="7" ry="7.8" fill="${K}"/><circle cx="40.5" cy="45" r="3" fill="#fff"/><circle cx="64.5" cy="45" r="3" fill="#fff"/><circle cx="36" cy="51" r="1.4" fill="#fff"/><circle cx="60" cy="51" r="1.4" fill="#fff"/>`;
+const smile=`<path d="M43 66 Q46.5 71 50 66 Q53.5 71 57 66" stroke="${K}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`;
+const open=`<path d="M43 66 Q50 78 57 66 Z" fill="${K}"/><path d="M46 70 Q50 76 54 70 Z" fill="${P}"/>`;
+const frown=`<path d="M44 71 Q50 66 56 71" stroke="${K}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`;
+const blush=``;
+const heart=(x,y,s)=>`<path transform="translate(${x} ${y}) scale(${s})" d="M0 3 C0 -1 5 -1 5 3 C5 -1 10 -1 10 3 C10 7 5 9 5 11 C5 9 0 7 0 3Z" fill="#ff6b8a"/>`;
+const spark=(x,y)=>`<path transform="translate(${x} ${y})" d="M0 -6 L1.5 -1.5 L6 0 L1.5 1.5 L0 6 L-1.5 1.5 L-6 0 L-1.5 -1.5Z" fill="#ffc94d"/>`;
+const face={
+happy:closedHappy+open+blush+heart(76,10,1)+heart(14,14,.8),
+smile:dots+`<path d="M42 66 Q46 72 50 67 Q54 72 58 66" stroke="${K}" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M46.5 69 Q46 77 50.5 77.5 Q55 77 54 69 Q50 71 46.5 69Z" fill="#f0809a"/><path d="M50.3 70.5 L50.3 75" stroke="#d9607c" stroke-width="1"/>`,
+calm:closedDown+smile+`<g transform="translate(80 22)"><circle r="3" cx="0" cy="-4" fill="#ffb3c7"/><circle r="3" cx="4" cy="0" fill="#ffb3c7"/><circle r="3" cx="0" cy="4" fill="#ffb3c7"/><circle r="3" cx="-4" cy="0" fill="#ffb3c7"/><circle r="2" fill="#ffe08a"/></g>`,
+excited:big+open+spark(14,16)+spark(84,14)+spark(88,34),
+cozy:closedDown+smile+blush+`<path d="M78 14 q3 -4 0 -8 M84 16 q3 -4 0 -8" stroke="#e0a080" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+sad:big+frown+`<path d="M33 40 L44 38" stroke="${K}" stroke-width="2" stroke-linecap="round"/><path d="M56 38 L67 40" stroke="${K}" stroke-width="2" stroke-linecap="round"/>`,
+cry:closedDown+frown+`<path d="M36 52 Q33 60 36 64 Q39 60 36 52Z" fill="#7cc4f2"/><path d="M64 52 Q61 60 64 64 Q67 60 64 52Z" fill="#7cc4f2"/>`,
+angry:dots+frown+`<path d="M32 39 L44 44" stroke="${K}" stroke-width="2.5" stroke-linecap="round"/><path d="M68 39 L56 44" stroke="${K}" stroke-width="2.5" stroke-linecap="round"/><g transform="translate(80 16)" stroke="#ff5a5a" stroke-width="2.5" stroke-linecap="round"><path d="M-6 -2 Q-2 -2 -2 -6"/><path d="M6 -2 Q2 -2 2 -6"/><path d="M-6 2 Q-2 2 -2 6"/><path d="M6 2 Q2 2 2 6"/></g>`,
+sleepy:`<path d="M34 49 L44 49" stroke="${K}" stroke-width="3" stroke-linecap="round"/><path d="M56 49 L66 49" stroke="${K}" stroke-width="3" stroke-linecap="round"/>`+`<ellipse cx="50" cy="70" rx="3" ry="3.5" fill="${K}"/>`+`<text x="72" y="22" font-size="13" font-weight="bold" fill="#8fa8e0" font-family="sans-serif">z</text><text x="82" y="12" font-size="10" font-weight="bold" fill="#8fa8e0" font-family="sans-serif">z</text>`,
+tired:`<path d="M35 45 L43 52 M43 45 L35 52" stroke="${K}" stroke-width="2.5" stroke-linecap="round"/><path d="M57 45 L65 52 M65 45 L57 52" stroke="${K}" stroke-width="2.5" stroke-linecap="round"/><path d="M44 68 L56 68" stroke="${K}" stroke-width="2.2" stroke-linecap="round"/><path d="M50 68 Q50 77 54 76 Q56 72 54 68Z" fill="${P}"/><path d="M28 30 Q24 34 28 38" stroke="#7cc4f2" stroke-width="2" fill="none"/>`
+}[k]||dots+smile;
+return `<svg viewBox="0 0 100 100" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg"><path d="M30 30 C14 30 8 52 12 66 C15 76 26 76 29 66 C31 56 32 44 36 36Z" fill="${B}"/><path d="M70 30 C86 30 92 52 88 66 C85 76 74 76 71 66 C69 56 68 44 64 36Z" fill="${B}"/><path d="M28 38 C20 44 17 56 19 64" stroke="#f3c9a8" stroke-width="2" fill="none" opacity=".6"/><path d="M72 38 C80 44 83 56 81 64" stroke="#f3c9a8" stroke-width="2" fill="none" opacity=".6"/><path d="M38 84 Q50 92 62 84 L64 92 Q50 99 36 92Z" fill="${R}"/><path d="M38 84 Q50 92 62 84" stroke="#d89a4a" stroke-width="1.6" fill="none"/><g fill="#fff"><circle cx="42" cy="90" r=".9"/><circle cx="46" cy="93" r=".9"/><circle cx="50" cy="91" r=".9"/><circle cx="54" cy="93" r=".9"/><circle cx="58" cy="90" r=".9"/><circle cx="50" cy="96" r=".9"/><circle cx="44" cy="96" r=".9"/><circle cx="56" cy="96" r=".9"/></g><ellipse cx="50" cy="52" rx="32" ry="30" fill="${T}"/><path d="M45 23 Q50 21.5 55 23 Q58 36 64 52 Q50 50 36 52 Q42 36 45 23Z" fill="${W}"/><ellipse cx="50" cy="66" rx="19" ry="14" fill="${W}"/><ellipse cx="50" cy="80" rx="11" ry="4" fill="${W}"/><ellipse cx="29" cy="60" rx="6" ry="3.6" fill="${P}" opacity=".75"/><ellipse cx="71" cy="60" rx="6" ry="3.6" fill="${P}" opacity=".75"/><path d="M44.5 59.5 Q50 57 55.5 59.5 Q55.5 64.5 50 66 Q44.5 64.5 44.5 59.5Z" fill="${K}"/><ellipse cx="48" cy="59.6" rx="1.9" ry="1" fill="#fff" opacity=".8"/><g transform="translate(0 2)">${face}</g></svg>`}
+const $=id=>document.getElementById(id);
+let entries=[],mood="",editing=null,photos=[];
+let cur=new Date();cur.setDate(1);
+// IndexedDB storage (写真が入っても容量に余裕)
+let db;
+function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open("my-diary",1);r.onupgradeneeded=()=>r.result.createObjectStore("entries",{keyPath:"id"});r.onsuccess=()=>{db=r.result;res()};r.onerror=()=>rej(r.error)})}
+function tx(mode){return db.transaction("entries",mode).objectStore("entries")}
+function loadAll(){return new Promise(res=>{const r=tx("readonly").getAll();r.onsuccess=()=>res(r.result)})}
+function put(e){return new Promise(res=>{const r=tx("readwrite").put(e);r.onsuccess=res})}
+function remove(id){return new Promise(res=>{const r=tx("readwrite").delete(id);r.onsuccess=res})}
+function ymd(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function today(){return ymd(new Date())}
+function fmt(s){const [y,m,d]=s.split("-").map(Number);const w="日月火水木金土"[new Date(y,m-1,d).getDay()];return `${y}年${m}月${d}日（${w}）`}
+function esc(s){return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function renderMoods(){$("moods").innerHTML="";MOODS.forEach(([m,t])=>{const b=document.createElement("button");b.innerHTML=beagle(m,40)+"<small>"+t+"</small>";if(m===mkey(mood))b.className="on";b.onclick=()=>{mood=mkey(mood)===m?"":m;renderMoods()};$("moods").appendChild(b)})}
+function renderPhotos(){$("photos").innerHTML="";photos.forEach((p,i)=>{const d=document.createElement("div");d.className="ph";d.innerHTML=`<img src="${p}"><button>✕</button>`;d.querySelector("button").onclick=()=>{photos.splice(i,1);renderPhotos()};$("photos").appendChild(d)})}
+function shrink(file){return new Promise(res=>{const img=new Image();const url=URL.createObjectURL(file);img.onload=()=>{const max=1200;let w=img.width,h=img.height;if(w>max||h>max){const s=max/Math.max(w,h);w=Math.round(w*s);h=Math.round(h*s)}const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(img,0,0,w,h);URL.revokeObjectURL(url);res(c.toDataURL("image/jpeg",0.82))};img.onerror=()=>res(null);img.src=url})}
+function reset(date){editing=null;mood="";photos=[];$("date").value=date||today();$("title").value="";$("body").value="";$("save").textContent="保存する";renderMoods();renderPhotos()}
+function openEntry(e){editing=e.id;mood=e.mood||"";photos=[...(e.photos||[])];$("date").value=e.date;$("title").value=e.title||"";$("body").value=e.body||"";$("save").textContent="更新する";renderMoods();renderPhotos();$("editor").scrollIntoView({behavior:"smooth"})}
+function renderCal(){const y=cur.getFullYear(),m=cur.getMonth();$("month").textContent=`${y}年 ${m+1}月`;
+let h=["日","月","火","水","木","金","土"].map(d=>`<div class="dow">${d}</div>`).join("");
+const first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate();
+for(let i=0;i<first;i++)h+=`<div class="day empty"></div>`;
+let count=0;
+for(let d=1;d<=days;d++){const key=ymd(new Date(y,m,d));const es=entries.filter(e=>e.date===key);if(es.length)count++;
+const e=es.slice().sort((a,b)=>b.id-a.id).find(x=>x.mood)||es[0];const pic=es.map(x=>(x.photos||[])[0]).find(Boolean);
+h+=`<div class="day${key===today()?" today":""}${e&&e.mood?" hasmood":""}" data-d="${key}">${pic?`<img src="${pic}">`:""}<span class="n">${d}</span>${e&&e.mood?`<span class="m">${beagle(e.mood,"78%")}</span>`:(e&&!pic?`<span class="m">📝</span>`:"")}</div>`}
+$("cal").innerHTML=h;$("stat").textContent=count?`今月は ${count} 日書きました ✨`:"日付をタップして書きはじめましょう";
+document.querySelectorAll(".day[data-d]").forEach(el=>el.onclick=()=>{const d=el.dataset.d;const e=entries.filter(x=>x.date===d).sort((a,b)=>b.id-a.id)[0];if(e)openEntry(e);else{reset(d);$("editor").scrollIntoView({behavior:"smooth"})}})}
+function renderList(){const q=$("search").value.trim();const list=entries.filter(e=>!q||((e.title||"")+(e.body||"")).includes(q)).sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);
+$("list").innerHTML=list.length?list.map(e=>`<div class="entry"><h3 style="display:flex;align-items:center;gap:6px">${e.mood?beagle(e.mood,32):""}<span>${fmt(e.date)} ${esc(e.title)}</span></h3><p>${esc(e.body)}</p>${(e.photos||[]).length?`<div class="eph">${e.photos.map(p=>`<img src="${p}" onclick="zoom(this.src)">`).join("")}</div>`:""}<div class="ops"><button onclick="edit(${e.id})">編集</button><button onclick="del(${e.id})">削除</button></div></div>`).join(""):`<p class="muted">${q?"見つかりませんでした":"まだ日記はありません。上から書いてみましょう。"}</p>`}
+function refresh(){renderCal();renderList()}
+$("prev").onclick=()=>{cur.setMonth(cur.getMonth()-1);renderCal()};
+$("next").onclick=()=>{cur.setMonth(cur.getMonth()+1);renderCal()};
+$("addPhoto").onclick=()=>$("photoFile").click();
+$("photoFile").onchange=async ev=>{for(const f of ev.target.files){const p=await shrink(f);if(p)photos.push(p)}ev.target.value="";renderPhotos()};
+$("save").onclick=async()=>{const body=$("body").value.trim(),title=$("title").value.trim();if(!body&&!title&&!photos.length){alert("本文か写真を入れてください");return}
+const data={date:$("date").value||today(),mood,title,body,photos};
+let e;if(editing){e={...entries.find(x=>x.id===editing),...data}}else{e={id:Date.now(),...data}}
+await put(e);entries=await loadAll();const [y,m]=e.date.split("-").map(Number);cur=new Date(y,m-1,1);reset();refresh()};
+$("clear").onclick=()=>reset();
+window.edit=id=>openEntry(entries.find(x=>x.id===id));
+window.del=async id=>{if(confirm("この日記を削除しますか？")){await remove(id);entries=await loadAll();refresh()}};
+window.zoom=src=>{$("viewImg").src=src;$("view").style.display="flex"};
+$("view").onclick=()=>$("view").style.display="none";
+$("search").oninput=renderList;
+$("export").onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(entries)],{type:"application/json"}));a.download="diary-backup-"+today()+".json";a.click()};
+$("importBtn").onclick=()=>$("importFile").click();
+$("importFile").onchange=ev=>{const f=ev.target.files[0];if(!f)return;f.text().then(async t=>{try{const arr=JSON.parse(t);const ids=new Set(entries.map(e=>e.id));for(const e of arr){if(!ids.has(e.id))await put(e)}entries=await loadAll();refresh();alert("読み込みました")}catch(err){alert("読み込めませんでした")}})};
+(async()=>{await openDB();
+// 前のバージョンで書いた日記を引き継ぐ
+const old=JSON.parse(localStorage.getItem("my-diary-entries")||"[]");if(old.length){for(const e of old)await put(e);localStorage.removeItem("my-diary-entries")}
+entries=await loadAll();reset();refresh()})();
+if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js")}
+if(navigator.storage&&navigator.storage.persist){navigator.storage.persist()}
+</script>
+</body>
+</html>
